@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>排班优化厨房</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <div>
+          <h1>排班优化厨房</h1>
+          <p>披萨工序布局与员工排班模拟</p>
+        </div>
+        <div class="topbar-actions">
+          <select id="templateSelect" class="topbar-select" aria-label="场景模板"></select>
+          <button class="ghost-button" id="exportButton" type="button">导出 JSON</button>
+          <label class="ghost-button import-button">
+            导入 JSON
+            <input id="importInput" type="file" accept="application/json,.json" />
+          </label>
+          <button class="ghost-button" id="resetButton" type="button">重置布局</button>
+          <button class="primary-button" id="enterScheduleButton" type="button">进入排班</button>
+          <button class="ghost-button" id="backSetupButton" type="button">返回场景</button>
+          <button class="primary-button" id="optimizeButton" type="button">优化方案</button>
+        </div>
+      </header>
+
+      <section class="setup-intro" id="setupIntro">
+        <div>
+          <h2>选择场景并编辑工厂平面</h2>
+          <p>先选择模板，定义预定工序，把设备从左侧设备库拖入平面图。完成后进入排班页生成路线、优化策略和时间线。</p>
+        </div>
+      </section>
+
+      <main class="workspace">
+        <aside class="panel left-panel" aria-label="工具与参数">
+          <section>
+            <h2>设备库</h2>
+            <div id="stationList" class="station-list"></div>
+          </section>
+
+          <section class="control-stack">
+            <h2>参数</h2>
+            <label>
+              订单数量
+              <input id="ordersInput" type="range" min="1" max="10" value="4" />
+              <span id="ordersValue">4 张</span>
+            </label>
+            <label>
+              员工数量
+              <input id="workersInput" type="range" min="1" max="5" value="2" />
+              <span id="workersValue">2 人</span>
+            </label>
+            <label>
+              移动速度
+              <input id="speedInput" type="range" min="0.5" max="2" value="1" step="0.1" />
+              <span id="speedValue">1.0 格/分钟</span>
+            </label>
+          </section>
+
+          <section class="metric-section">
+            <h2>指标</h2>
+            <div class="metric-grid" id="metricGrid"></div>
+          </section>
+        </aside>
+
+        <section class="canvas-stage" aria-label="厨房平面图">
+          <section class="process-planner" aria-label="预定工序">
+            <div class="process-planner-head">
+              <div>
+                <h2>预定工序</h2>
+                <p>从左侧设备库拖入这里生成工序，也可以拖动工序卡片调整顺序。</p>
+              </div>
+              <button class="ghost-button compact-button" id="addProcessStepButton" type="button">
+                新增工序
+              </button>
+            </div>
+            <div id="processPlan" class="process-plan"></div>
+          </section>
+          <div class="canvas-header">
+            <div>
+              <h2>工厂平面图</h2>
+              <p>把设备拖到网格中放置。第一页只编辑布局；路线和优化会在排班页生成。</p>
+            </div>
+            <div class="layout-tools">
+              <label>
+                宽
+                <input id="gridWidthInput" type="number" min="6" max="30" />
+              </label>
+              <label>
+                高
+                <input id="gridHeightInput" type="number" min="4" max="20" />
+              </label>
+              <button class="ghost-button compact-button" id="layoutEditButton" type="button">
+                编辑平面图
+              </button>
+              <button class="ghost-button compact-button" id="blockedEditButton" type="button">
+                添加禁行区
+              </button>
+              <button class="ghost-button compact-button" id="undoButton" type="button">
+                回退
+              </button>
+            </div>
+            <div class="legend">
+              <span><i class="legend-route-one"></i><i class="legend-route-two"></i>员工路线</span>
+              <span><i class="legend-hot"></i>高频区域</span>
+              <span><i class="legend-start"></i>员工起点</span>
+              <span><i class="legend-fixed"></i>锁定设备</span>
+              <span><i class="legend-blocked"></i>障碍物</span>
+            </div>
+          </div>
+          <div class="floor-wrap">
+            <div id="floor" class="floor" role="application" aria-label="可拖拽厨房网格">
+              <svg id="routeLayer" class="route-layer" aria-hidden="true"></svg>
+              <div id="blockedLayer" class="blocked-layer"></div>
+              <div id="heatLayer" class="heat-layer"></div>
+              <div id="stationLayer"></div>
+            </div>
+          </div>
+        </section>
+
+        <aside class="panel right-panel" aria-label="流程与优化结果">
+          <section>
+            <h2>流程步骤</h2>
+            <ol class="steps" id="stepsList"></ol>
+          </section>
+
+          <section>
+            <h2>瓶颈</h2>
+            <div id="bottleneckCard" class="bottleneck-card"></div>
+          </section>
+
+          <section>
+            <h2>优化候选</h2>
+            <div id="candidateList" class="candidate-list"></div>
+          </section>
+        </aside>
+      </main>
+
+      <section class="timeline-panel" aria-label="甘特时间线">
+        <div class="timeline-head">
+          <div>
+          <h2>排班时间线</h2>
+            <p id="timelineSummary"></p>
+          </div>
+          <div class="schedule-tools">
+            <div id="timelineStepPalette" class="timeline-step-palette" aria-label="可拖拽排班步骤"></div>
+            <button class="ghost-button compact-button" id="restoreScheduleButton" type="button">
+              恢复默认排班
+            </button>
+          </div>
+        </div>
+        <div class="timeline-scroll" id="timelineScroll">
+          <div id="timeline" class="timeline"></div>
+        </div>
+      </section>
+    </div>
+
+    <script type="module" src="./src/app.js"></script>
+  </body>
+</html>
